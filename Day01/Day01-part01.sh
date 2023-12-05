@@ -12,7 +12,7 @@ while read -r line; do
     temp=${line#*[0-9]}
     temp2=${line%$temp}
     i=${#temp2}
-    i=$(( num - 1 ))
+    i=$(( i - 1 ))
     num1=${temp2:$i:1}
 
     # Extract the last number
