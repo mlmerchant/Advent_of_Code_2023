@@ -35,6 +35,7 @@ for seed in seeds:
 
     results.append(seed)
 
+# Solution is 486613012.
 print(min(results))
 
 
