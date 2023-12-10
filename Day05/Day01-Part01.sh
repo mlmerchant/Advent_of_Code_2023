@@ -266,7 +266,7 @@ function ConvertSeed() {
             local sourceRangeEnd=$(awk "BEGIN {print ($sourceRangeStart + $sourceRangeLength - 1)}")
 
            # if (( $endSeed >= $sourceRangeStart) && $endSeed < $sourceRangeEnd )); then
-           if (awk "{ if ($endSeed >= $sourceRangeStart) exit 0; else exit 1; }") && (awk "{ if ($endSeed <= $sourceRangeLength) exit 0; else exit 1; }"); then
+           if (awk "{ if ($endSeed >= $sourceRangeStart) exit 0; else exit 1; }") && (awk "{ if ($endSeed <= $sourceRangeEnd) exit 0; else exit 1; }"); then
                 endSeed=$(awk "BEGIN {print ($endSeed - $sourceRangeStart)}")
                 endSeed=$(awk "BEGIN {print ($endSeed + $destinationRangeStart)}")
                 break
