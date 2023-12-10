@@ -253,29 +253,42 @@ function Debug(){
 }
 
 
+#function ConvertSeed() {
+#    local seed=$1
+#    local startSeed=$seed
+#    local endSeed=$seed
+#    for inputFile in {1..7}; do
+#        while read -r var; do
+#            local sourceRangeStart=$(echo "$var" | cut -d ' ' -f 2)
+#            local destinationRangeStart=$(echo "$var" | cut -d ' ' -f 1)
+#            local sourceRangeLength=$(echo "$var" | cut -d ' ' -f 3)
+#            local sourceRangeEnd=$(awk "BEGIN {print ($sourceRangeStart + $sourceRangeLength - 1)}")
+#           if (awk "{ if ($endSeed >= $sourceRangeStart) exit 0; else exit 1; }") && (awk "{ if ($endSeed <= $sourceRangeEnd) exit 0; else exit 1; }"); then
+#                endSeed=$(awk "BEGIN {print ($endSeed - $sourceRangeStart)}")
+#                endSeed=$(awk "BEGIN {print ($endSeed + $destinationRangeStart)}")
+#                break
+#           fi
+#        done < "$inputFile"
+#    done
+#    echo "$startSeed" > "results/$endSeed"
+#}
+
+
 function ConvertSeed() {
     local seed=$1
     local startSeed=$seed
     local endSeed=$seed
     for inputFile in {1..7}; do
-        while read -r var; do
-            local sourceRangeStart=$(echo "$var" | cut -d ' ' -f 2)
-            local destinationRangeStart=$(echo "$var" | cut -d ' ' -f 1)
-            local sourceRangeLength=$(echo "$var" | cut -d ' ' -f 3)
-
-            local sourceRangeEnd=$(awk "BEGIN {print ($sourceRangeStart + $sourceRangeLength - 1)}")
-
-           # if (( $endSeed >= $sourceRangeStart) && $endSeed < $sourceRangeEnd )); then
-           if (awk "{ if ($endSeed >= $sourceRangeStart) exit 0; else exit 1; }") && (awk "{ if ($endSeed <= $sourceRangeEnd) exit 0; else exit 1; }"); then
-                endSeed=$(awk "BEGIN {print ($endSeed - $sourceRangeStart)}")
-                endSeed=$(awk "BEGIN {print ($endSeed + $destinationRangeStart)}")
+        while read -r destinationRangeStart sourceRangeStart sourceRangeLength; do
+            local sourceRangeEnd=$(echo "$sourceRangeStart + $sourceRangeLength - 1" | bc)
+            if [[ $(echo "$endSeed >= $sourceRangeStart && $endSeed <= $sourceRangeEnd" | bc) -eq 1 ]]; then
+                endSeed=$(echo "$endSeed - $sourceRangeStart + $destinationRangeStart" | bc)
                 break
-           fi
+            fi
         done < "$inputFile"
     done
     echo "$startSeed" > "results/$endSeed"
 }
-
 
 # Split the data into separate files.
 shouldWrite="false"
