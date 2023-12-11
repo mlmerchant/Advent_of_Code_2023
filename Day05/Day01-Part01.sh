@@ -1,6 +1,6 @@
 #!/bin/bash
 # Run using https://tio.run/#bash
-DEBUG="true"
+DEBUG="false"
 
 function writeData() {
 
@@ -249,7 +249,7 @@ EOF
             shouldWrite="false"
             echo "${line//\: /\:}" | cut -d ':' -f2 > seeds
         elif StringContains "${line:-blank}" "map"; then
-            writeFile=$(echo $line | cut -d " " -f 1 | cut -d "-" -f 3 )
+            writeFile=$(echo "$line" | cut -d " " -f 1 | cut -d "-" -f 3 )
             shouldWrite="true"
         elif StringContains "${line:-blank}" "blank"; then
             shouldWrite="false"
@@ -281,7 +281,7 @@ EOF
 }
 
 function StringContains() (
-    echo $1 | grep -F $2 > /dev/null
+    echo "$1" | grep -F "$2" > /dev/null
 )
 
 
@@ -296,34 +296,43 @@ function ConvertSeed(){
     local endSeed=$seed
     for inputFile in {1..7}; do
         while read -r var; do
-            local sourceRangeStart=$(echo $var | cut -d ' ' -f 2)
-            local destinationRangeStart=$(echo $var | cut -d ' ' -f 1)
-            local sourceRangeLength=$(echo $var | cut -d ' ' -f 3)
-            local sourceRangeEnd=$((sourceRangeStart + sourceRangeLength))
-            if [[ ($endSeed -ge $sourceRangeStart) ]] && [[ ($endSeed -lt $sourceRangeEnd) ]]; then
-                endSeed=$((endSeed - sourceRangeStart))
-                endSeed=$((endSeed + destinationRangeStart))
+            local destinationRangeStart=$(echo "$var" | cut -d ' ' -f 1)
+            local sourceRangeStart=$(echo "$var" | cut -d ' ' -f 2)
+            local sourceRangeLength=$(echo "$var" | cut -d ' ' -f 3)
+
+            troubleshooting=$(echo $destinationRangeStart $sourceRangeStart $sourceRangeLength | wc -w)
+            # Debug $troubleshooting
+
+            local sourceRangeEnd=$((sourceRangeStart + sourceRangeLength - 1)) # Inclusive
+            if [[ $endSeed -ge $sourceRangeStart ]] && [[ $endSeed -le $sourceRangeEnd ]]; then
+                endSeed=$((endSeed - sourceRangeStart + destinationRangeStart))
                 break
             fi
-         done < $inputFile
+
+         done < "$inputFile"
      done
-     echo $startSeed > results/$endSeed
+     echo "$startSeed" > "results/$endSeed"
 }
 
 
 function ConvertSeeds() {
-    writeData $1
-    for seed in ${seeds[@]}; do
-        ConvertSeed $seed
+    writeData "$1"
+    for seed in "${seeds[@]}"; do
+        ConvertSeed "$seed"
     done
     
     # Diagnostic solution is 35.
     # Challenge solution is 486613012.
-    ls results/* | sort | head -n 1 | cut -d '/' -f 2
+
+    ls results/* | cut -d '/' -f 2 | sort -n | head -n 1
+
     cd ..
     rm -rf $FOLDER
 }
 
-ConvertSeeds "calibration"
+Debug " "
+# ConvertSeeds "calibration"
+Debug "Expected Calibration solution is 35."
+Debug " "
 ConvertSeeds "challenge"
-
+Debug "Expected Challenge solution is 486613012."
