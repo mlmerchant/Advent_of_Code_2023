@@ -1,6 +1,4 @@
 #!/bin/bash
-# todo -- This solution does not work.
-
 # Run using https://tio.run/#bash
 
 # use calibration or challenge
@@ -255,42 +253,25 @@ function Debug(){
 }
 
 
-#function ConvertSeed() {
-#    local seed=$1
-#    local startSeed=$seed
-#    local endSeed=$seed
-#    for inputFile in {1..7}; do
-#        while read -r var; do
-#            local sourceRangeStart=$(echo "$var" | cut -d ' ' -f 2)
-#            local destinationRangeStart=$(echo "$var" | cut -d ' ' -f 1)
-#            local sourceRangeLength=$(echo "$var" | cut -d ' ' -f 3)
-#            local sourceRangeEnd=$(awk "BEGIN {print ($sourceRangeStart + $sourceRangeLength - 1)}")
-#           if (awk "{ if ($endSeed >= $sourceRangeStart) exit 0; else exit 1; }") && (awk "{ if ($endSeed <= $sourceRangeEnd) exit 0; else exit 1; }"); then
-#                endSeed=$(awk "BEGIN {print ($endSeed - $sourceRangeStart)}")
-#                endSeed=$(awk "BEGIN {print ($endSeed + $destinationRangeStart)}")
-#                break
-#           fi
-#        done < "$inputFile"
-#    done
-#    echo "$startSeed" > "results/$endSeed"
-#}
-
-
-function ConvertSeed() {
-    local seed=$1
-    local startSeed=$seed
-    local endSeed=$seed
+function ConvertSeed(){
+    local startSeed=$1
+    local endSeed=$1
+    # echo $endSeed
     for inputFile in {1..7}; do
-        while read -r destinationRangeStart sourceRangeStart sourceRangeLength; do
-            local sourceRangeEnd=$(echo "$sourceRangeStart + $sourceRangeLength - 1" | bc)
-            if [[ $(echo "$endSeed >= $sourceRangeStart && $endSeed <= $sourceRangeEnd" | bc) -eq 1 ]]; then
-                endSeed=$(echo "$endSeed - $sourceRangeStart + $destinationRangeStart" | bc)
+        while read -r var; do
+            local sourceRangeStart=$(echo $var | cut -d ' ' -f 2)
+            local destinationRangeStart=$(echo $var | cut -d ' ' -f 1)
+            local sourceRangeLength=$(echo $var | cut -d ' ' -f 3)
+            local sourceRangeEnd=$(python3 -c "print($sourceRangeStart + $sourceRangeLength)")
+            if [[ $(python3 -c "print($endSeed >= $sourceRangeStart)") == "True" ]] && [[ $(python3 -c "print($endSeed < $sourceRangeEnd)") == "True" ]]; then
+                endSeed=$(python3 -c "print($endSeed - $sourceRangeStart + $destinationRangeStart)")
                 break
             fi
-        done < "$inputFile"
-    done
-    echo "$startSeed" > "results/$endSeed"
+         done < $inputFile
+     done
+     echo $startSeed > results/$endSeed
 }
+
 
 # Split the data into separate files.
 shouldWrite="false"
@@ -312,7 +293,7 @@ while read -r line; do
 done < $DATA
 
 # clean up initial data files
-rm calibration; rm challenge
+rm calibration; rm challenge 
 
 # read seeds into an array
 seeds=( `cat seeds` )
@@ -335,9 +316,10 @@ mkdir results
 # Seed 55, soil 57, fertilizer 57, water 53, light 46, temperature 82, humidity 82, location 86.
 # Seed 13, soil 13, fertilizer 52, water 41, light 34, temperature 34, humidity 35, location 35.
 
-for seed in "${seeds[@]}"; do
-    ConvertSeed "$seed"
+for seed in ${seeds[@]}; do
+    ConvertSeed $seed
 done
+
 
 # Solution is 486613012.
 # for the diagnostic data, 35 is the answer
