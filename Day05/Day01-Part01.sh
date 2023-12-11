@@ -1,16 +1,20 @@
 #!/bin/bash
 # Run using https://tio.run/#bash
+DEBUG="true"
 
-# use calibration or challenge
-DATA="challenge"
-FOLDER="data"
-DEBUG="false"
+function writeData() {
+
+    Debug "DATA is is $1"
+
+    # use calibration or challenge
+    DATA=$1
+    FOLDER="aoc_data"
 
 
-mkdir $FOLDER
-cd $FOLDER || exit 5
+    mkdir $FOLDER
+    cd $FOLDER || exit 5
 
-cat << EOF  > "calibration"
+    cat << EOF  > "calibration"
 seeds: 79 14 55 13
 
 seed-to-soil map:
@@ -45,7 +49,7 @@ humidity-to-location map:
 60 56 37
 56 93 4
 EOF
-cat << EOF  > "challenge"
+    cat << EOF  > "challenge"
 seeds: 2906961955 52237479 1600322402 372221628 2347782594 164705568 541904540 89745770 126821306 192539923 3411274151 496169308 919015581 8667739 654599767 160781040 3945616935 85197451 999146581 344584779
 
 seed-to-soil map:
@@ -238,10 +242,43 @@ humidity-to-location map:
 3943239374 3952138264 193123655
 EOF
 
-###
-###   Destination, Source, Length
-###
+    # Split the data into separate files.
+    shouldWrite="false"
+    while read -r line; do
+        if StringContains "${line:-blank}" "seeds" ; then
+            shouldWrite="false"
+            echo "${line//\: /\:}" | cut -d ':' -f2 > seeds
+        elif StringContains "${line:-blank}" "map"; then
+            writeFile=$(echo $line | cut -d " " -f 1 | cut -d "-" -f 3 )
+            shouldWrite="true"
+        elif StringContains "${line:-blank}" "blank"; then
+            shouldWrite="false"
+        fi
+        if `$shouldWrite`; then
+            if (echo $line | grep -v "[a-z]" > /dev/null); then
+                echo $line >> $writeFile
+            fi
+        fi
+    done < $DATA
 
+    # clean up initial data files
+    rm calibration; rm challenge 
+
+    # read seeds into an array
+    seeds=( `cat seeds` )
+    rm seeds
+
+    # put the table in order
+    mv soil 1
+    mv fertilizer 2
+    mv water 3
+    mv light 4
+    mv temperature 5
+    mv humidity 6
+    mv location 7
+
+    mkdir results
+}
 
 function StringContains() (
     echo $1 | grep -F $2 > /dev/null
@@ -254,17 +291,18 @@ function Debug(){
 
 
 function ConvertSeed(){
-    local startSeed=$1
-    local endSeed=$1
-    # echo $endSeed
+    local seed=$1
+    local startSeed=$seed
+    local endSeed=$seed
     for inputFile in {1..7}; do
         while read -r var; do
             local sourceRangeStart=$(echo $var | cut -d ' ' -f 2)
             local destinationRangeStart=$(echo $var | cut -d ' ' -f 1)
             local sourceRangeLength=$(echo $var | cut -d ' ' -f 3)
-            local sourceRangeEnd=$(python3 -c "print($sourceRangeStart + $sourceRangeLength)")
-            if [[ $(python3 -c "print($endSeed >= $sourceRangeStart)") == "True" ]] && [[ $(python3 -c "print($endSeed < $sourceRangeEnd)") == "True" ]]; then
-                endSeed=$(python3 -c "print($endSeed - $sourceRangeStart + $destinationRangeStart)")
+            local sourceRangeEnd=$((sourceRangeStart + sourceRangeLength))
+            if [[ ($endSeed -ge $sourceRangeStart) ]] && [[ ($endSeed -lt $sourceRangeEnd) ]]; then
+                endSeed=$((endSeed - sourceRangeStart))
+                endSeed=$((endSeed + destinationRangeStart))
                 break
             fi
          done < $inputFile
@@ -273,54 +311,19 @@ function ConvertSeed(){
 }
 
 
-# Split the data into separate files.
-shouldWrite="false"
-while read -r line; do
-    if StringContains "${line:-blank}" "seeds" ; then
-        shouldWrite="false"
-        echo "${line//\: /\:}" | cut -d ':' -f2 > seeds
-    elif StringContains "${line:-blank}" "map"; then
-        writeFile=$(echo $line | cut -d " " -f 1 | cut -d "-" -f 3 )
-        shouldWrite="true"
-    elif StringContains "${line:-blank}" "blank"; then
-        shouldWrite="false"
-    fi
-    if `$shouldWrite`; then
-        if (echo $line | grep -v "[a-z]" > /dev/null); then
-            echo $line >> $writeFile
-        fi
-    fi
-done < $DATA
+function ConvertSeeds() {
+    writeData $1
+    for seed in ${seeds[@]}; do
+        ConvertSeed $seed
+    done
+    
+    # Diagnostic solution is 35.
+    # Challenge solution is 486613012.
+    ls results/* | sort | head -n 1 | cut -d '/' -f 2
+    cd ..
+    rm -rf $FOLDER
+}
 
-# clean up initial data files
-rm calibration; rm challenge 
+ConvertSeeds "calibration"
+ConvertSeeds "challenge"
 
-# read seeds into an array
-seeds=( `cat seeds` )
-rm seeds
-
-# put the table in order
-mv soil 1
-mv fertilizer 2
-mv water 3
-mv light 4
-mv temperature 5
-mv humidity 6
-mv location 7
-
-mkdir results
-
-###DEBUG####
-# Seed 79, soil 81, fertilizer 81, water 81, light 74, temperature 78, humidity 78, location 82.
-# Seed 14, soil 14, fertilizer 53, water 49, light 42, temperature 42, humidity 43, location 43.
-# Seed 55, soil 57, fertilizer 57, water 53, light 46, temperature 82, humidity 82, location 86.
-# Seed 13, soil 13, fertilizer 52, water 41, light 34, temperature 34, humidity 35, location 35.
-
-for seed in ${seeds[@]}; do
-    ConvertSeed $seed
-done
-
-
-# Solution is 486613012.
-# for the diagnostic data, 35 is the answer
-ls results/* | sort | head -n 1 | cut -d '/' -f 2
