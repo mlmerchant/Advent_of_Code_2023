@@ -1,3 +1,11 @@
+# call from bash using the argument 1 to 10.
+# python3 ./Day05-Part02.py 1 &; python3 ./Day05-Part02.py 2 &; etc...
+# The resul is the lowest filename in the /results folder.
+
+import sys
+
+input_number = int(sys.argv[1])
+
 DATA = "Challenge.txt"
 
 with open(DATA) as file:
@@ -23,14 +31,13 @@ with open(DATA) as file:
 seed_base_seeds = [seeds[i] for i in range(0, len(seeds), 2)]
 seed_counts = [seeds[i] for i in range(1, len(seeds), 2)]
 
-seed_base_count = len(seed_base_seeds)
-current_seed_base = 1
-
 result = float('inf')  # Using infinity as the initial highest possible result
 
+# So that we can call these one at a time from a bash script.
+seed_base_seeds = [seed_base_seeds[input_number]]
+seed_counts = [seed_counts[input_number]]
+
 for seed_base_seed, count in zip(seed_base_seeds, seed_counts):
-    print(f"Working {current_seed_base} of {seed_base_count}.")
-    current_seed_base += 1
     for seed in range(seed_base_seed, seed_base_seed + count):
         start_seed = seed
         for table in tableFlow:
@@ -45,4 +52,7 @@ for seed_base_seed, count in zip(seed_base_seeds, seed_counts):
         if seed < result:
             result = seed
 
-print(result)
+with open(f"results/{result}", "w") as file:
+    pass
+
+#  Solution is 56931769
